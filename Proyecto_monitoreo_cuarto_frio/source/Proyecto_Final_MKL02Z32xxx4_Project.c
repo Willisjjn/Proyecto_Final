@@ -19,6 +19,7 @@
 
 #include "sdk_hal_uart0.h"
 #include "sdk_hal_gpio.h"
+#include "sdk_hal_i2c1.h"
 
 
 /* TODO: insert other include files here. */
@@ -40,7 +41,22 @@ int main(void) {
     /* Init FSL debug console. */
     BOARD_InitDebugConsole();
 #endif
-    (void)uart0Inicializar(115200); //115200bps
+
+    printf("Inicializa UART0:");
+    //inicializa puerto UART0 y solo avanza si es exitoso el proceso
+    if(uart0Inicializar(115200)!=kStatus_Success){	//115200bps
+    	printf("Error");
+    	return 0 ;
+    };
+
+    printf("Inicializa I2C1:");
+    //inicializa puerto I2C1 y solo avanza si es exitoso el proceso
+    if(i2c1MasterInit(100000)!=kStatus_Success){	//100kbps
+    	printf("Error");
+    	return 0 ;
+    }
+    printf("OK\r\n");
+
 
     PRINTF("Usar teclado para controlar LEDs\r\n");
     PRINTF("r-R led ROJO\r\n");
