@@ -20,18 +20,53 @@
 #include "sdk_hal_uart0.h"
 #include "sdk_hal_gpio.h"
 #include "sdk_hal_i2c1.h"
+#include "sdk_pph_bme280.h"
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+#define HABILITAR_SENSOR_BME280		1
+
+/*******************************************************************************
+ * Private Prototypes
+ ******************************************************************************/
 
 
-/* TODO: insert other include files here. */
+/*******************************************************************************
+ * External vars
+ ******************************************************************************/
 
-/* TODO: insert other definitions and declarations here. */
 
+/*******************************************************************************
+ * Local vars
+ ******************************************************************************/
+
+
+/*******************************************************************************
+ * Private Source Code
+ ******************************************************************************/
+
+
+/*******************************************************************************
+ * Public Source Code
+ ******************************************************************************/
+
+
+
+void waytTime(uint32_t tiempo) {
+	//uint32_t tiempo = 0x1FFFF;
+	do {
+		tiempo--;
+	} while (tiempo != 0x0000);
+}
 /*
  * @brief   Application entry point.
  */
 int main(void) {
-	status_t status;
-	uint8_t nuevo_byte_uart;
+
+
+	bme280_data_t bme280_datos;
+	uint8_t bme280_detectado = 0;
+	uint8_t bme280_base_de_tiempo = 0;
 
   	/* Init board hardware. */
     BOARD_InitBootPins();
@@ -57,40 +92,36 @@ int main(void) {
     }
     printf("OK\r\n");
 
+#if HABILITAR_SENSOR_BME280
+    printf("Detectando BME280:");
+    //LLamado a funcion que identifica sensor BME280
+    if (bme280WhoAmI() == kStatus_Success){
+    	printf("OK\r\n");
+    	(void)bme280Init();	//inicializa sensor bme280
+    	bme280_detectado = 1;	//activa bandera que indica (SI HAY BME280)
+    }
+#endif
 
-    PRINTF("Usar teclado para controlar LEDs\r\n");
-    PRINTF("r-R led ROJO\r\n");
-    PRINTF("v-V led VERDE\r\n");
-    PRINTF("a-A led AZUL\r\n");
+
     while(1) {
-      	if(uart0CuantosDatosHayEnBuffer()>0){
-      		status=uart0LeerByteDesdeBuffer(&nuevo_byte_uart);
-      		if(status==kStatus_Success){
-      			printf("dato:%c\r\n",nuevo_byte_uart);
-      			switch (nuevo_byte_uart) {
-  				case 'a':
-  				case 'A':
-  					gpioPutToggle(KPTB10);
-  					break;
 
-  				case 'v':
-  					gpioPutHigh(KPTB7);
-  					break;
-  				case 'V':
-  					gpioPutLow(KPTB7);
-  					break;
+    	waytTime(2000000);
 
-  				case 'r':
-  					gpioPutValue(KPTB6,1);
-  					break;
-  				case 'R':
-  					gpioPutValue(KPTB6,0);
-  					break;
-  				}
-      		}else{
-      			printf("error\r\n");
-      		}
-      	}
+    	#if HABILITAR_SENSOR_BME280
+    	if(bme280_detectado == 1){
+    		bme280_base_de_tiempo ++;	//incrementa base de tiempo para tomar dato bme280
+    		if(bme280_base_de_tiempo > 10){	//	>10 equivale aproximadamente a 2s
+    			bme280_base_de_tiempo = 0; //reinicia contador de tiempo
+    			if(bme280ReadData(&bme280_datos) == kStatus_Success){	//toma lectura humedad, presion, temperatura
+        			printf("BME280 ->");
+    				printf("temperatura:0x%X ",bme280_datos.temperatura);	//imprime temperatura sin procesar
+        			printf("humedad:0x%X ",bme280_datos.humedad);	//imprime humedad sin procesar
+        			printf("presion:0x%X ",bme280_datos.presion);	//imprime presion sin procesar
+        			printf("\r\n");	//Imprime cambio de linea
+    			}
+    		}
+    	}
+       #endif
     }
     return 0 ;
 }
